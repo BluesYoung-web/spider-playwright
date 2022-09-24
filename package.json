@@ -1,0 +1,21 @@
+{
+  "name": "spider-playwright",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vitest -u",
+    "test": "vitest",
+    "build": "unbuild"
+  },
+  "dependencies": {
+    "playwright": "^1.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "16",
+    "happy-dom": "^6.0.4",
+    "typescript": "^4.6.4",
+    "unbuild": "^0.8.11",
+    "vite": "^3.1.0",
+    "vitest": "^0.23.4"
+  }
+}
