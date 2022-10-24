@@ -28,10 +28,12 @@ describe('spider demo', () => {
     expect(await isHoliday('20221011')).toBe(false);
     expect(await isHoliday('20221012')).toBe(false);
     expect(await isHoliday('20221013')).toBe(false);
-    expect(await isHoliday('20221014')).toBe(false);
+    expect(await isHoliday('20221014')).toBe(true);
 
     expect(await isHoliday('20221015')).toBe(true);
     expect(await isHoliday('20221016')).toBe(true);
+    
+    expect(await isHoliday('20221028')).toBe(true);
 
   });
 });

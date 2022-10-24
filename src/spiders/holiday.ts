@@ -41,9 +41,15 @@ export const getFullYearData = async (year = new Date().getFullYear().toString()
       const container = await day.$('a');
       if (container) {
         const date = await (await container.$('.wnrl_td_gl'))?.innerHTML();
-        const isFree = ['wnrl_riqi_mo', 'wnrl_riqi_xiu'].includes(await container.getAttribute('class') as string);
-        
-        database[`${year}${m}${date}`] = isFree;
+        const isFree = 
+          // 节假日
+          ['wnrl_riqi_mo', 'wnrl_riqi_xiu'].includes(await container.getAttribute('class') as string)
+          // 周五
+          || new Date(`${year}-${m}-${date}`).getDay() === 5
+        ;
+        if (isFree) {
+          database[`${year}${m}${date}`] = isFree;
+        }
       }
       
     }
@@ -55,7 +61,8 @@ export const getFullYearData = async (year = new Date().getFullYear().toString()
   }
 
   const data_path = new URL(`../../holiday-${year}.json`, import.meta.url);
-  await writeFile(data_path, JSON.stringify(database, null, 2), 'utf-8');
+  await writeFile(data_path, JSON.stringify(database), 'utf-8');
+  // await writeFile(data_path, JSON.stringify(database, null, 2), 'utf-8');
   return database;
 };
 
@@ -80,5 +87,5 @@ export const isHoliday = async (day?: string) => {
     database = await getFullYearData(year);
   }
   
-  return database[day];
+  return !!database[day];
 };
