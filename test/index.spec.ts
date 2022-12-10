@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2022-09-24 15:57:54
- * @LastEditTime: 2022-09-24 18:02:44
+ * @LastEditTime: 2022-12-10 11:30:13
  * @Description: 
  */
 import { describe, it, expect } from 'vitest';
@@ -35,5 +35,9 @@ describe('spider demo', () => {
     
     expect(await isHoliday('20221028')).toBe(true);
 
+  });
+
+  it('2023', async () => {
+    expect(await getFullYearData('2023')).toMatchSnapshot();
   });
 });
