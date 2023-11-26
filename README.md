@@ -3,6 +3,7 @@
 ## WIP
 
 - [x] [爬取某年全年的节假日信息](./src/spiders/holiday.ts)
+- [x] [爬取 iptv 直播源](./src/spiders/iptv.ts)
 - [ ] more...
 
 ## 数据源站
