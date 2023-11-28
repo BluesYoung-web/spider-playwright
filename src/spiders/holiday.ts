@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2022-09-24 18:23:13
- * @LastEditTime: 2022-09-24 18:28:13
+ * @LastEditTime: 2023-11-28 14:36:48
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -24,9 +24,18 @@ export const getFullYearData = async (year = new Date().getFullYear().toString()
 
   const browser = await chromium.launch({
     // headless: false,
-    timeout: 0
+    timeout: 0,
+    channel: 'msedge'
   });
-  const page = await browser.newPage();
+  const page = await browser.newPage({
+    extraHTTPHeaders: {
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      // !!! fix 无头模式数据异常
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+    },
+    
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.62'
+  });
 
   const traverseMonth = async (m: string) => {
     const box = await page.locator('#jie_guo > .wnrl_k > .wnrl_k_zuo .wnrl_riqi');

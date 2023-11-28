@@ -14,19 +14,17 @@ jobs:
     name: 'iptv 爬虫'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - run: corepack enable
+      - uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
         with:
           node-version: 20
-      - name: 安装pnpm
-        run: npm install -g pnpm
+          cache: "pnpm"
+
       - name: 依赖安装
         run: pnpm install
-      - name: 准备浏览器环境
-        run: npx playwright install msedge
       - name: 运行 iptv 爬虫
         run: pnpm test iptv
-
 
       - name: 检查文件是否发生改变
         id: check_changes
@@ -42,17 +40,9 @@ jobs:
             git add src/assets/iptv.json
             git commit -m "chore: 🏡 更新 iptv.json"
             git push origin HEAD
+
+            echo "提交推送成功，准备同步 gitee"
+            git push https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/username/repo.git
           else
             echo "未检测到变化。跳过提交。"
           fi
-
-  gitee-sync:
-      name: '同步代码到 gitee'
-      needs: [playwright]
-      runs-on: ubuntu-latest
-      steps:
-        - uses: abersheeran/sync-gitee-mirror@v1-beta
-          with:
-            repository: BluesYoung-web/spider-playwright
-            username: ${{ secrets.USERNAME }}
-            password: ${{ secrets.PASSWORD }}

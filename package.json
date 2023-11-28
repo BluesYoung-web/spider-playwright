@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vitest -u",
     "test": "vitest",
-    "build": "unbuild"
+    "build": "unbuild",
+    "postinstall": "playwright install msedge"
   },
   "dependencies": {
     "playwright": "^1.26.0"
