@@ -20,9 +20,7 @@ jobs:
       - name: 运行 节假日信息爬虫
         run: |
           # 从 issue body 中解析年份
-          SPIDER_HOLIDAY_YEAR=$(echo "${{ github.event.issue.body }}" | awk '/[0-9]+/ {print $1}')
-          echo "$SPIDER_HOLIDAY_YEAR"
-          pnpm test holiday
+          SPIDER_HOLIDAY_YEAR=$(echo "${{ github.event.issue.body }}" | awk '/[0-9]+/ {print $1}') pnpm test holiday
 
       - name: 检查文件是否发生改变
         id: check_changes
