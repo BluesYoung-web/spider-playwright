@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2023-11-27 10:29:33
+ * @LastEditTime: 2023-11-28 09:11:16
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -72,7 +72,18 @@ export async function generateIPTVSrc () {
         (await (await result.$('.m3u8'))?.innerText() ?? '').trim()
       ])
 
-      if (channel.toLowerCase() === name.trim().toLowerCase()) {
+      const invalidDomain = [
+        'cfss.cc'
+      ]
+
+      // 过滤频道
+      // 过滤 ipv6 的地址
+      // 过滤 无效网址
+      if (
+        channel.toLowerCase() === name.trim().toLowerCase()
+         && !/\[.*?\]/.test(src)
+         && !invalidDomain.some((domain) => src.includes(domain))
+        ) {
         avaliable.push({
           channel,
           rgb: +(rgb.match(regexp)?.[1] ?? '255'),
