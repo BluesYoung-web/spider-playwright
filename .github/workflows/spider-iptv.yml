@@ -1,0 +1,46 @@
+name: 抓取 iptv 视频源
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'src/assets/iptv.json'
+  schedule:
+    - cron: '0 */6 * * *' # 每隔 6 小时触发一次
+
+jobs:
+  playwright:
+    name: 'iptv 爬虫'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.40.0-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 依赖安装
+        run: pnpm install
+      - name: 运行 iptv 爬虫
+        run: pnpm test iptv
+        env:
+          HOME: /root
+      - name: 提交代码
+        run: |
+          git config --global user.email "bluesyoung_web@163.com"
+          git config --global user.name "BluesYoung-web"
+          git add src/assets/iptv.json
+          git commit -m "chore: 🏡 更新 iptv.json"
+          git push origin HEAD
+
+  gitee-sync:
+      name: '同步代码到 gitee'
+      needs: [playwright]
+      runs-on: ubuntu-latest
+      steps:
+        - uses: abersheeran/sync-gitee-mirror@v1-beta
+          with:
+            repository: BluesYoung-web/spider-playwright
+            username: ${{ secrets.USERNAME }}
+            password: ${{ secrets.PASSWORD }}
