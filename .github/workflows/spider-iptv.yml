@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: 安装pnpm
+        run: npm install -g pnpm
       - name: 依赖安装
         run: pnpm install
       - name: 运行 iptv 爬虫
