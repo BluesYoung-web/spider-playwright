@@ -18,10 +18,9 @@ jobs:
       - name: 依赖安装
         run: pnpm install
       - name: 运行 节假日信息爬虫
-        env:
-          # 从 issue body 中解析年份
-          SPIDER_HOLIDAY_YEAR: $(echo ${{ github.event.issue.body }} | awk '/[0-9]+/ {print $1}')
         run: |
+          # 从 issue body 中解析年份
+          SPIDER_HOLIDAY_YEAR=$(echo "${{ github.event.issue.body }}" | awk '/[0-9]+/ {print $1}')
           echo "$SPIDER_HOLIDAY_YEAR"
           pnpm test holiday
 
