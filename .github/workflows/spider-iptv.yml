@@ -31,20 +31,27 @@ jobs:
       - name: 检查文件是否发生改变
         id: check_changes
         run: |
-          git diff --quiet || echo "changes=true" >> "$GITHUB_OUTPUT"
+          modified=$(git status --porcelain)
+          if [ -n "$modified" ]; then
+            echo "有文件发生改变"
+            echo "changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "没有文件发生改变"
+            echo "changes=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: 提交代码
         run: |
           changes=${{ steps.check_changes.outputs.changes }}
-          if [[ "$changes" ]]; then
+          if [[ "$changes" == "true" ]]; then
             git config --global user.email "bluesyoung_web@163.com"
             git config --global user.name "BluesYoung-web"
             git add src/assets/iptv.json
             git commit -m "chore: 🏡 更新 iptv.json"
-            git push origin HEAD
+            git push -f origin HEAD
 
             echo "提交推送成功，准备同步 gitee"
-            git push https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/username/repo.git
+            git push -f https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/${{ github.repository }}.git
           else
             echo "未检测到变化。跳过提交。"
           fi
