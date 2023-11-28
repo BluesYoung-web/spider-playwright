@@ -24,6 +24,8 @@ jobs:
         run: npm install -g pnpm
       - name: 依赖安装
         run: pnpm install
+      - name: 准备浏览器环境
+        run: npx playwright install msedge
       - name: 运行 iptv 爬虫
         run: pnpm test iptv
         env:
