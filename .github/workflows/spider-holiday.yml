@@ -1,19 +1,11 @@
-name: 抓取 iptv 视频源
+name: 抓取节假日信息
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'src/assets/global.m3u'
-      - '.github/workflows/spider-iptv.yml'
-      - 'src/spiders/iptv.ts'
-  schedule:
-    - cron: '0 */12 * * *' # 每隔 12 小时触发一次
-
+  issues:
+    types: [opened]
 jobs:
   playwright:
-    name: 'iptv 爬虫'
+    name: '节假日信息-爬虫'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -24,9 +16,15 @@ jobs:
           cache: "pnpm"
 
       - name: 依赖安装
+        env:
+          SPIDER_HOLIDAY_YEAR: ${{ github.event.issue.body.year }}
         run: pnpm install
-      - name: 运行 iptv 爬虫
-        run: pnpm test iptv
+      - name: 运行 节假日信息爬虫
+        env:
+          SPIDER_HOLIDAY_YEAR: ${{ github.event.issue.body.year }}
+        run: |
+          echo "$SPIDER_HOLIDAY_YEAR"
+          pnpm test holiday
 
       - name: 检查文件是否发生改变
         id: check_changes
@@ -39,8 +37,8 @@ jobs:
           if [[ "$changes" ]]; then
             git config --global user.email "bluesyoung_web@163.com"
             git config --global user.name "BluesYoung-web"
-            git add src/assets/iptv.json
-            git commit -m "chore: 🏡 更新 iptv.json"
+            git add src/assets/holiday-*.json
+            git commit -m "chore: 🏡 更新 holiday.json"
             git push origin HEAD
 
             echo "提交推送成功，准备同步 gitee"
