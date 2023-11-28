@@ -26,13 +26,25 @@ jobs:
         run: npx playwright install msedge
       - name: 运行 iptv 爬虫
         run: pnpm test iptv
+
+
+      - name: 检查文件是否发生改变
+        id: check_changes
+        run: |
+          git diff --quiet || echo "changes=true" >> "$GITHUB_OUTPUT"
+
       - name: 提交代码
         run: |
-          git config --global user.email "bluesyoung_web@163.com"
-          git config --global user.name "BluesYoung-web"
-          git add src/assets/iptv.json
-          git commit -m "chore: 🏡 更新 iptv.json"
-          git push origin HEAD
+          changes=${{ steps.check_changes.outputs.changes }}
+          if [[ "$changes" ]]; then
+            git config --global user.email "bluesyoung_web@163.com"
+            git config --global user.name "BluesYoung-web"
+            git add src/assets/iptv.json
+            git commit -m "chore: 🏡 更新 iptv.json"
+            git push origin HEAD
+          else
+            echo "未检测到变化。跳过提交。"
+          fi
 
   gitee-sync:
       name: '同步代码到 gitee'
