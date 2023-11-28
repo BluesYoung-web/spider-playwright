@@ -9,3 +9,5 @@
 ## 数据源站
 
 [便民查询网](https://wannianrili.bmcx.com/)
+
+[iptv 搜索](https://www.foodieguide.com/iptvsearch/)
