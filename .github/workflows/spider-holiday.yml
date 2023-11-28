@@ -42,10 +42,7 @@ jobs:
             git config --global user.name "BluesYoung-web"
             git add src/assets/holiday-*.json
             git commit -m "chore: 🏡 更新 holiday.json"
-            git push -f origin HEAD
-
-            echo "提交推送成功，准备同步 gitee"
-            git push -f https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/${{ github.repository }}.git
+            git push origin HEAD
           else
             echo "未检测到变化。跳过提交。"
           fi
