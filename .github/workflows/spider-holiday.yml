@@ -25,7 +25,8 @@ jobs:
       - name: 检查文件是否发生改变
         id: check_changes
         run: |
-          if [ -n $(git status --porcelain) ]; then
+          modified=$(git status --porcelain)
+          if [ -n "$modified" ]; then
             echo "有文件发生改变"
             echo "changes=true" >> "$GITHUB_OUTPUT"
           else
