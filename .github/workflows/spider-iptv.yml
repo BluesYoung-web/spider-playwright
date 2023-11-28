@@ -13,8 +13,6 @@ jobs:
   playwright:
     name: 'iptv 爬虫'
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.40.0-jammy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,8 +26,6 @@ jobs:
         run: npx playwright install msedge
       - name: 运行 iptv 爬虫
         run: pnpm test iptv
-        env:
-          HOME: /root
       - name: 提交代码
         run: |
           git config --global user.email "bluesyoung_web@163.com"
