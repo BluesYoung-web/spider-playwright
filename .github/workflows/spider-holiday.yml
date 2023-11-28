@@ -1,6 +1,9 @@
 name: 抓取节假日信息
 
 on:
+  push:
+    paths:
+      - '.github/workflows/spider-holiday.yml'
   issues:
     types: [opened]
 jobs:
@@ -14,6 +17,17 @@ jobs:
         with:
           node-version: 20
           cache: "pnpm"
+
+      - name: Print Issue Details
+        run: |
+          echo "Issue Title: ${{ github.event.issue.title }}"
+          echo "Issue Body: ${{ github.event.issue.body }}"
+          echo "Issue Number: ${{ github.event.issue.number }}"
+          echo "Issue Action: ${{ github.event.action }}"
+          echo "Issue State: ${{ github.event.issue.state }}"
+          echo "Issue User: ${{ github.event.issue.user.login }}"
+          echo "Issue Labels: ${{ join(github.event.issue.labels.*.name, ', ') }}"
+          echo "Issue Assignees: ${{ join(github.event.issue.assignees.*.login, ', ') }}"
 
       - name: 依赖安装
         env:
@@ -29,8 +43,14 @@ jobs:
       - name: 检查文件是否发生改变
         id: check_changes
         run: |
-          git diff --quiet || echo "changes=true" >> "$GITHUB_OUTPUT"
-
+          if git diff --quiet; then
+            echo "没有文件发生改变"
+            echo "changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "有文件发生改变"
+            echo "changes=true" >> "$GITHUB_OUTPUT"
+          fi
+ 
       - name: 提交代码
         run: |
           changes=${{ steps.check_changes.outputs.changes }}
