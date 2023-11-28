@@ -1,0 +1,10 @@
+name: 节假日信息爬取
+description: 填入一个具体的年份，爬取对应的节假日信息
+body:
+  - type: input
+    id: year
+    attributes:
+      label: 填入年份
+      placeholder: 填入需要爬取的年份，例如：2023
+    validations:
+      required: true
