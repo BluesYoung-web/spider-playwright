@@ -53,3 +53,27 @@ jobs:
           else
             echo "未检测到变化。跳过提交。"
           fi
+
+      - name: 自动关闭 issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { SPIDER_HOLIDAY_YEAR } = process.env
+            const body = `
+            🎉 更新完成，\`src/assets/holiday-${SPIDER_HOLIDAY_YEAR}.json\`！
+            `
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            })
+
+            console.log('关闭 issue: ', context.issue)
+
+            github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            })
