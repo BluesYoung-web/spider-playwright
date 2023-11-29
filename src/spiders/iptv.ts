@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2023-11-28 09:11:16
+ * @LastEditTime: 2023-11-29 15:39:57
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -149,7 +149,7 @@ export async function generateIPTVSrc () {
   }
 
   if (failTVs.length) {
-    console.log('开始错误重试。。。')
+    console.log('开始错误重试。。。', failTVs.length)
     for (const f of failTVs) {
       try {
         console.log('开始重试', f.tvgName)
