@@ -23,9 +23,13 @@ jobs:
       - name: 依赖安装
         run: pnpm install
       - name: 运行 节假日信息爬虫
+        id: run_spider
         run: |
           # 从 issue body 中解析年份
           SPIDER_HOLIDAY_YEAR=$(echo "${{ github.event.issue.body }}" | awk '/[0-9]+/ {print $1}') pnpm test holiday
+
+          # 年份变量输出
+          echo "year=$(echo "${{ github.event.issue.body }}" | awk '/[0-9]+/ {print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: 检查文件是否发生改变
         id: check_changes
@@ -58,9 +62,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { SPIDER_HOLIDAY_YEAR } = process.env
             const body = `
-            🎉 更新完成，\`src/assets/holiday-${SPIDER_HOLIDAY_YEAR}.json\`！
+            🎉 更新完成，\`src/assets/holiday-${{ steps.run_spider.outputs.year }}.json\`！
             `
             await github.rest.issues.createComment({
               owner: context.repo.owner,
