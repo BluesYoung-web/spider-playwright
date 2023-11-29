@@ -23,6 +23,11 @@ jobs:
           node-version: 20
           cache: "pnpm"
 
+      - name: 同步 gitee 仓库
+        run: |
+          git remote add origin-gitee https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/${{ github.repository }}
+          git pull origin-gitee master
+
       - name: 依赖安装
         run: pnpm install
       - name: 运行 iptv 爬虫
@@ -49,6 +54,8 @@ jobs:
             git add src/assets/iptv.json
             git commit -m "chore: 🏡 更新 iptv.json"
             git push -f origin HEAD
+            echo "强推 gitee"
+            git push origin-gitee HEAD:master
           else
             echo "未检测到变化。跳过提交。"
           fi
