@@ -55,7 +55,7 @@ jobs:
             git commit -m "chore: 🏡 更新 iptv.json"
             git push -f origin HEAD
             echo "强推 gitee"
-            git push origin-gitee HEAD:master
+            git push -f origin-gitee HEAD:master
           else
             echo "未检测到变化。跳过提交。"
           fi
