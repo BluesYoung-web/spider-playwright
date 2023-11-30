@@ -3,6 +3,7 @@
 ## WIP
 
 - [x] [爬取某年全年的节假日信息](./src/spiders/holiday.ts)
+  - 主要用于防沉迷，所以爬取规则是：节假日、周五、周六、周日
 - [x] [爬取 iptv 直播源](./src/spiders/iptv.ts)
 - [ ] more...
 
