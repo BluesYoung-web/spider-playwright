@@ -63,7 +63,9 @@ jobs:
         with:
           script: |
             const body = `
-            🎉 更新完成，\`src/assets/holiday-${{ steps.run_spider.outputs.year }}.json\`！
+            🎉 更新完成！
+            [github源](https://raw.githubusercontent.com/BluesYoung-web/spider-playwright/master/src/assets/holiday-${{ steps.run_spider.outputs.year }}.json)
+            [gitee源(国内)]( https://gitee.com/BluesYoung-web/spider-playwright/raw/master/src/assets/holiday-${{ steps.run_spider.outputs.year }}.json)
             `
             await github.rest.issues.createComment({
               owner: context.repo.owner,
