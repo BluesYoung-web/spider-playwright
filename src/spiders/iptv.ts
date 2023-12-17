@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2023-11-29 15:39:57
+ * @LastEditTime: 2023-12-17 17:09:32
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -163,4 +163,15 @@ export async function generateIPTVSrc () {
 
   await writeFile(data_path, JSON.stringify(DataBase), 'utf-8');
   return DataBase;
-};
+}
+
+export async function downloadFromOthers() {
+  const target = 'https://raw.githubusercontent.com/joevess/IPTV/main/home.m3u8'
+
+  const rawM3U8 = await (await fetch(target)).text()
+  console.log("🚀 ~ file: iptv.ts:172 ~ downloadFromOthers ~ rawM3U8:", rawM3U8)
+
+  const data_path = new URL(`../assets/home.m3u8`, import.meta.url)
+  await writeFile(data_path, rawM3U8, 'utf-8');
+  return rawM3U8;
+}
