@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2023-12-17 17:09:32
+ * @LastEditTime: 2024-01-15 14:38:46
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -17,10 +17,10 @@ interface IPTVItem {
   groupTitle: string;
 }
 
-export async function generateIPTVSrc () {
+export async function generateIPTVSrc() {
   const src_prefix = `https://www.foodieguide.com/iptvsearch/?s=`;
   const data_path = new URL(`../assets/iptv.json`, import.meta.url);
-  
+
   let DataBase: Record<string, IPTVItem> = {}
 
   try {
@@ -42,13 +42,13 @@ export async function generateIPTVSrc () {
       // !!! fix 无头模式数据异常
       'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
     },
-    
+
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.62'
   });
 
   async function getTVSrc(name: string) {
     await page.goto(src_prefix + name.trim(), { waitUntil: 'domcontentloaded' });
-    
+
     // 先写死取第一条，后面优化
     const results = await page.$$('.tables > .result')
     console.log(`总计：${results.length} 条`)
@@ -81,9 +81,9 @@ export async function generateIPTVSrc () {
       // 过滤 无效网址
       if (
         channel.toLowerCase() === name.trim().toLowerCase()
-         && !/\[.*?\]/.test(src)
-         && !invalidDomain.some((domain) => src.includes(domain))
-        ) {
+        && !/\[.*?\]/.test(src)
+        && !invalidDomain.some((domain) => src.includes(domain))
+      ) {
         avaliable.push({
           channel,
           rgb: +(rgb.match(regexp)?.[1] ?? '255'),
@@ -126,7 +126,7 @@ export async function generateIPTVSrc () {
 
     try {
       const tvgSrc = await getTVSrc(tvgName)
-    
+
       DataBase[tvgId] = {
         tvgId,
         tvgName,
@@ -174,4 +174,26 @@ export async function downloadFromOthers() {
   const data_path = new URL(`../assets/home.m3u8`, import.meta.url)
   await writeFile(data_path, rawM3U8, 'utf-8');
   return rawM3U8;
+}
+
+export async function downloadFromEpg() {
+  const target = 'https://epg.pw/test_channels.m3u'
+
+  const rawM3U8 = await (await fetch(target)).text()
+  // console.log("🚀 ~ downloadFromEpg ~ rawM3U8:", rawM3U8)
+
+  const splitsArr = rawM3U8.match(/#EXTINF:-1\s.+\n.+/img) || []
+  // console.log("🚀 ~ downloadFromEpg ~ splitsArr:", splitsArr)
+
+  const cntvArr = splitsArr.filter(txt => /中國大陸/.test(txt))
+  console.log("🚀 ~ downloadFromEpg ~ cntvArr:", cntvArr)
+
+  const rawEpgM3u = `#EXTM3U x-tvg-url="https://live.fanmingming.com/e.xml" catchup="append" catchup-source="?playseek=\${(b)yyyyMMddHHmmss}-\${(e)yyyyMMddHHmmss}"
+${cntvArr.join('\n')}
+  `
+
+  const data_path = new URL(`../assets/epg.m3u8`, import.meta.url)
+  await writeFile(data_path, rawEpgM3u, 'utf-8');
+
+  return rawEpgM3u
 }
