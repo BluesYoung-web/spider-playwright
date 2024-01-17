@@ -51,7 +51,7 @@ jobs:
           if [[ "$changes" == "true" ]]; then
             git config --global user.email "bluesyoung_web@163.com"
             git config --global user.name "BluesYoung-web"
-            git add src/assets/iptv.json src/assets/home.m3u8
+            git add src/assets/*
             git commit -m "chore: 🏡 更新视频源"
             git push -f origin HEAD
             echo "强推 gitee"
