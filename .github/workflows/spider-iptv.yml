@@ -53,9 +53,10 @@ jobs:
             git config --global user.name "BluesYoung-web"
             git add src/assets/*
             git commit -m "chore: 🏡 更新视频源"
-            git push -f origin HEAD
             echo "强推 gitee"
             git push -f origin-gitee HEAD:master
+            echo "强推 github"
+            git push -f origin HEAD
           else
             echo "未检测到变化。跳过提交。"
           fi
