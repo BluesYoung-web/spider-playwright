@@ -11,4 +11,4 @@
 
 [便民查询网](https://wannianrili.bmcx.com/)
 
-[iptv 搜索](https://www.foodieguide.com/iptvsearch/)
+[iptv 搜索](http://www.foodieguide.com/iptvsearch/)

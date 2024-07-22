@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2024-01-15 14:38:46
+ * @LastEditTime: 2024-07-22 09:21:03
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -18,7 +18,7 @@ interface IPTVItem {
 }
 
 export async function generateIPTVSrc() {
-  const src_prefix = `https://www.foodieguide.com/iptvsearch/?s=`;
+  const src_prefix = `http://www.foodieguide.com/iptvsearch/?s=`;
   const data_path = new URL(`../assets/iptv.json`, import.meta.url);
 
   let DataBase: Record<string, IPTVItem> = {}
@@ -43,7 +43,7 @@ export async function generateIPTVSrc() {
       'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
     },
 
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.62'
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'
   });
 
   async function getTVSrc(name: string) {
