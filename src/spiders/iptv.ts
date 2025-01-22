@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2024-07-22 09:21:03
+ * @LastEditTime: 2025-01-22 17:34:52
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -172,6 +172,17 @@ export async function downloadFromOthers() {
   console.log("🚀 ~ file: iptv.ts:172 ~ downloadFromOthers ~ rawM3U8:", rawM3U8)
 
   const data_path = new URL(`../assets/home.m3u8`, import.meta.url)
+  await writeFile(data_path, rawM3U8, 'utf-8');
+  return rawM3U8;
+}
+
+export async function downloadFrom_wwb521_live() {
+  const target = 'https://raw.githubusercontent.com/wwb521/live/main/tv.m3u'
+
+  const rawM3U8 = await (await fetch(target)).text()
+  console.log("🚀 ~ downloadFrom_wwb521_live ~ rawM3U8:", rawM3U8)
+
+  const data_path = new URL(`../assets/tv.m3u`, import.meta.url)
   await writeFile(data_path, rawM3U8, 'utf-8');
   return rawM3U8;
 }
