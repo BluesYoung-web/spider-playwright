@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2025-01-22 17:34:52
+ * @LastEditTime: 2025-01-24 16:40:37
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -184,6 +184,24 @@ export async function downloadFrom_wwb521_live() {
 
   const data_path = new URL(`../assets/tv.m3u`, import.meta.url)
   await writeFile(data_path, rawM3U8, 'utf-8');
+  return rawM3U8;
+}
+
+export async function downloadFrom_yue365_iptv() {
+  const target1 = 'https://raw.githubusercontent.com/yue365/IPTV/refs/heads/master/default.m3u'
+  const target2 = 'https://raw.githubusercontent.com/yue365/IPTV/refs/heads/master/cntv8.m3u'
+
+  const rawM3U8 = await (await fetch(target1)).text()
+  const rawM3U8_2 = await (await fetch(target2)).text()
+  console.log("🚀 ~ downloadFrom_yue365_iptv ~ rawM3U8:", rawM3U8)
+  console.log("🚀 ~ downloadFrom_yue365_iptv ~ rawM3U8_2:", rawM3U8_2)
+
+  const data_path = new URL(`../assets/yue365_default.m3u`, import.meta.url)
+  await writeFile(data_path, rawM3U8, 'utf-8');
+
+  const data_path2 = new URL(`../assets/yue365_cntv8.m3u`, import.meta.url)
+  await writeFile(data_path2, rawM3U8_2, 'utf-8');
+
   return rawM3U8;
 }
 

@@ -1,10 +1,10 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:00:30
- * @LastEditTime: 2025-01-22 17:36:37
+ * @LastEditTime: 2025-01-24 16:41:26
  * @Description: 
  */
-import { downloadFrom_wwb521_live, downloadFromEpg, downloadFromOthers, generateIPTVSrc } from '../src'
+import { downloadFrom_wwb521_live, downloadFrom_yue365_iptv, downloadFromEpg, downloadFromOthers, generateIPTVSrc } from '../src'
 
 import { describe, it, expect } from 'vitest';
 
@@ -25,5 +25,9 @@ describe('generateIPTVSrc', () => {
 
   it('download from wwb521', async () => {
     expect(await downloadFrom_wwb521_live()).toBeDefined()
+  })
+
+  it('download from yue365', async () => {
+    expect(await downloadFrom_yue365_iptv()).toBeDefined()
   })
 })
