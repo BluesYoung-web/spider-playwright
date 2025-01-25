@@ -1,7 +1,7 @@
 /*
  * @Author: zhangyang
  * @Date: 2023-11-26 17:05:09
- * @LastEditTime: 2025-01-24 16:40:37
+ * @LastEditTime: 2025-01-25 17:02:46
  * @Description: 
  */
 import { chromium } from 'playwright';
@@ -201,6 +201,17 @@ export async function downloadFrom_yue365_iptv() {
 
   const data_path2 = new URL(`../assets/yue365_cntv8.m3u`, import.meta.url)
   await writeFile(data_path2, rawM3U8_2, 'utf-8');
+
+  return rawM3U8;
+}
+
+export async function downloadFrom_zwc456baby() {
+  const target = 'https://raw.githubusercontent.com/zwc456baby/iptv_alive/refs/heads/master/live.m3u'
+  const rawM3U8 = await (await fetch(target)).text()
+  console.log("🚀 ~ downloadFrom_zwc456baby ~ rawM3U8:", rawM3U8)
+
+  const data_path = new URL(`../assets/zwc456baby_live.m3u`, import.meta.url)
+  await writeFile(data_path, rawM3U8, 'utf-8');
 
   return rawM3U8;
 }
