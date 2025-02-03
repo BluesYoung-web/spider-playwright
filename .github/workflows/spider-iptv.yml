@@ -17,11 +17,17 @@ jobs:
     name: 'iptv 爬虫'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: corepack enable
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4.0.0
+
+      - name: Set node version to 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          registry-url: https://registry.npmjs.org/
           cache: "pnpm"
 
       - name: 同步 gitee 仓库
@@ -30,8 +36,11 @@ jobs:
           git remote add origin-gitee https://oauth2:${{ secrets.GITEE_TOKEN }}@gitee.com/${{ github.repository }}
           git pull origin-gitee master
 
-      - name: 依赖安装
+      - name: Install deps
         run: pnpm install
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+          
       - name: 运行 iptv 爬虫
         run: pnpm test iptv
 
