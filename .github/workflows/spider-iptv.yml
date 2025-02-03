@@ -8,6 +8,7 @@ on:
       - 'src/assets/global.m3u'
       - '.github/workflows/spider-iptv.yml'
       - 'src/spiders/iptv.ts'
+      - 'package.json'
   schedule:
     - cron: '0 */12 * * *' # 每隔 12 小时触发一次
 
