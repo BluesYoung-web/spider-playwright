@@ -58,19 +58,15 @@ export async function getFreeNode() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        msgtype: 'markdown',
-        markdown: {
-          title: '免费节点(v2ray)',
-          text: `### 免费节点更新\n
-${lastTwoSpoilers.map((s, i) => `
-#### 配置 ${i + 1}
-- **密码：** \`${s.pwd}\`
-- **链接：** ${s.url}
-${s.config ? `- **配置：** \`\`\`\n${s.config}\n\`\`\`` : ''}
-`).join('\n')}\n\n
-> 更新时间：${new Date().toLocaleString()}
-`,
-        },
+        msgtype: 'feedCard',
+        feedCard: {
+          links: lastTwoSpoilers.map((s, i) => ({
+            title: `v2ray (password: ${s.pwd})`,
+            description: `密码: ${s.pwd}\n更新时间: ${new Date().toLocaleString()}`,
+            picURL: 'https://static.dingtalk.com/media/lQLPM4Gc03xjIbPNAgDNAgCwkVfi2qTLIAMHyvWcQlngAA_512_512.png', // 你可以替换成自己的图片
+            messageURL: s.url
+          }))
+        }
       }),
     });
     console.log('钉钉消息发送结果：', await res.json());
