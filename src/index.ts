@@ -7,3 +7,4 @@
 export * from './spiders/holiday';
 export * from './spiders/iptv';
 export * from './spiders/ccmihb';
+export * from './spiders/free-node';
