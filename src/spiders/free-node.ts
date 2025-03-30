@@ -52,6 +52,28 @@ export async function getFreeNode() {
     // 通过 钉钉 的 webhook 发消息给自己
     // @ts-expect-error
     const dingtalkWebhook = import.meta.env.VITE_DINGTALK_WEBHOOK;
+    await fetch(dingtalkWebhook, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        msgtype: 'markdown',
+        markdown: {
+          title: '免费节点(v2ray)',
+          text: `### 免费节点更新\n
+${lastTwoSpoilers.map((s, i) => `
+#### 配置 ${i + 1}
+- **密码：** \`${s.pwd}\`
+- **链接：** ${s.url}
+${s.config ? `- **配置：** \`\`\`\n${s.config}\n\`\`\`` : ''}
+`).join('\n')}\n\n
+> 更新时间：${new Date().toLocaleString()}
+`,
+        },
+      }),
+    })
+    
     const res = await fetch(dingtalkWebhook, {
       method: 'POST',
       headers: {

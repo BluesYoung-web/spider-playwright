@@ -9,7 +9,7 @@ on:
       - '.github/workflows/spider-free-node.yml'
       - 'package.json'
   schedule:
-    - cron: '0 7-21 * * *' # 从早上7点开始，每小时运行一次
+    - cron: '0 23-13 * * *' # 北京时间 7-21 点，每小时运行一次
   workflow_dispatch: # 添加手动触发按钮
 
 jobs:
