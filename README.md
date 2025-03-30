@@ -1,5 +1,7 @@
 # 基于 playwright 的爬虫程序集合
 
+[![v2ray spider](https://github.com/BluesYoung-web/spider-playwright/actions/workflows/spider-free-node.yml/badge.svg)](https://github.com/BluesYoung-web/spider-playwright/actions/workflows/spider-free-node.yml)
+
 ## WIP
 
 - [x] [爬取某年全年的节假日信息](./src/spiders/holiday.ts)
