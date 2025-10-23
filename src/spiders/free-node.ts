@@ -19,7 +19,7 @@ async function sendDingTalkMessage(lastTwoSpoilers: Spoiler[], version: string) 
       msgtype: 'markdown',
       markdown: {
         title: '免费节点(v2ray)----${version}',
-        text: `### 免费节点更新\n
+        text: `### 免费节点更新----${version}\n
 ${lastTwoSpoilers.map((s, i) => `
 #### 配置 ${i + 1}
 - **密码：** \`${s.pwd}\`
@@ -123,19 +123,24 @@ export async function getFreeNode() {
 
     await page.waitForLoadState('domcontentloaded');
 
+    let oldSpoilers: Spoiler[] = [];
+    let newSpoilers: Spoiler[] = [];
+
     try {
       console.log('run old spier')
-      await runOldSpier(page);
+      oldSpoilers = await runOldSpier(page);
     } catch (error) {
       console.error('Error:', error);
     }
 
     try {
       console.log('run new spier')
-      await runNewSpier(page);
+      newSpoilers = await runNewSpier(page);
     } catch (error) {
       console.error('Error:', error);
     }
+
+    return [oldSpoilers, newSpoilers];
     
   } catch (error) {
     console.error('Error:', error);
