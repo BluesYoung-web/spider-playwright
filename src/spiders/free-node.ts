@@ -52,25 +52,6 @@ ${s.config ? `- **配置：** \`\`\`\n${s.config}\n\`\`\`` : ''}
   console.log('钉钉消息发送结果：', await res.json());
 }
 
-async function runOldSpier(page: Page) {
-  // 获取所有 <tg-spoiler>
-  const spoilers: Spoiler[] = await page.$$eval('tg-spoiler', (elements) => {
-    return elements.map(element => {
-      const pwd = element.innerText;
-      const url = element.parentElement?.querySelector('a')?.href;
-      return { pwd, url };
-    });
-  });
-  console.log('识别到的内容：', spoilers);
-
-  // 取最后两条
-  const lastTwoSpoilers = spoilers.slice(-2);
-  console.log('最后两条：', lastTwoSpoilers);
-
-  await sendDingTalkMessage(lastTwoSpoilers, 'old');
-  console.log('todo: 自动抓取 clash 配置')
-  return lastTwoSpoilers;
-}
 
 async function runNewSpier(page: Page) {
   // 获取所有 <tg-spoiler>
@@ -123,16 +104,7 @@ export async function getFreeNode() {
 
     await page.waitForLoadState('domcontentloaded');
 
-    let oldSpoilers: Spoiler[] = [];
     let newSpoilers: Spoiler[] = [];
-
-    try {
-      console.log('run old spier')
-      oldSpoilers = await runOldSpier(page);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-
     try {
       console.log('run new spier')
       newSpoilers = await runNewSpier(page);
@@ -140,7 +112,7 @@ export async function getFreeNode() {
       console.error('Error:', error);
     }
 
-    return [oldSpoilers, newSpoilers];
+    return newSpoilers;
     
   } catch (error) {
     console.error('Error:', error);
