@@ -55,7 +55,7 @@ async function sendDingTalkMessage(result: SpoilerV2) {
     body: JSON.stringify({
       msgtype: 'text',
       text: {
-        content: rawMessage,
+        content: result.rawConfig,
       },
     }),
   });
