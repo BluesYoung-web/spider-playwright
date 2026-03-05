@@ -6,7 +6,37 @@ interface Spoiler {
   config?: string;
 }
 
-async function sendDingTalkMessage(lastTwoSpoilers: Spoiler[], version: string) {
+interface SpoilerV2 {
+  /**
+   * yaml 配置文件的 url
+   * 订阅地址
+   */
+  yamlUrl: string;
+  /**
+   * 上面订阅地址抓取到的文件内容
+   */
+  rawConfig: string;
+}
+
+async function sendDingTalkMessage(result: SpoilerV2) {
+  const rawMessage = JSON.stringify({
+    msgtype: 'markdown',
+    markdown: {
+      title: '免费节点(v2ray)',
+      text: `### 免费节点更新\n
+- **链接：** ${result.yamlUrl}
+
+\`\`\`yaml
+${result.rawConfig}
+\`\`\`
+
+> 更新时间：${new Date().toLocaleString()}
+`,
+    },
+  });
+
+  console.log('send msg to dingtalk: ', rawMessage);
+
   // 通过 钉钉 的 webhook 发消息给自己
   // @ts-expect-error
   const dingtalkWebhook = import.meta.env.VITE_DINGTALK_WEBHOOK;
@@ -15,63 +45,48 @@ async function sendDingTalkMessage(lastTwoSpoilers: Spoiler[], version: string) 
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      msgtype: 'markdown',
-      markdown: {
-        title: '免费节点(v2ray)----${version}',
-        text: `### 免费节点更新----${version}\n
-${lastTwoSpoilers.map((s, i) => `
-#### 配置 ${i + 1}
-- **密码：** \`${s.pwd}\`
-- **链接：** ${s.url}
-${s.config ? `- **配置：** \`\`\`\n${s.config}\n\`\`\`` : ''}
-`).join('\n')}\n\n
-> 更新时间：${new Date().toLocaleString()}
-`,
-      },
-    }),
+    body: rawMessage,
   })
-  
-  const res = await fetch(dingtalkWebhook, {
-    method: 'POST',
+}
+
+async function fetchClashConfig(url: string) {
+  // !!! mock clash app user-agent
+  const userAgent = 'FlClash/v0.8.33 clash-verge/v1.6.6 Platform/android';
+
+  const res = await fetch(url, {
     headers: {
-      'Content-Type': 'application/json'
+      'User-Agent': userAgent,
     },
-    body: JSON.stringify({
-      msgtype: 'feedCard',
-      feedCard: {
-        links: lastTwoSpoilers.map((s, i) => ({
-          title: `v2ray (password: ${s.pwd})---${version}`,
-          description: `密码: ${s.pwd}\n更新时间: ${new Date().toLocaleString()}`,
-          picURL: 'https://static.dingtalk.com/media/lQLPM4Gc03xjIbPNAgDNAgCwkVfi2qTLIAMHyvWcQlngAA_512_512.png', // 你可以替换成自己的图片
-          messageURL: s.url
-        }))
-      }
-    }),
   });
-  console.log('钉钉消息发送结果：', await res.json());
+  return await res.text();
 }
 
 
 async function runNewSpier(page: Page) {
-  // 获取所有 <tg-spoiler>
-  const spoilers: Spoiler[] = await page.$$eval('.tgme_widget_message_text', (elements) => {
-    // 取最后两条
-    const lastTwoSpoilers = Array.from(elements).slice(-2);
+  const yamlUrl = await page.$$eval('.tgme_widget_message_text', (elements) => {
+    // 取最后 1 条消息
+    const lastMsg = Array.from(elements).pop();
+
+    const allATags = lastMsg.querySelectorAll('a');
+    const allLinks = Array.from(allATags).map((tag: any) => tag.href);
+
+    const yamlUrl = allLinks.find(link => link.endsWith('.yaml') || link.endsWith('.yml'));
     
-    return lastTwoSpoilers.map(element => {
-      const url = element.querySelector('a')?.href;
-      // 节点密码：stilly
-      const pwd = element.innerText.match(/节点密码：(\w+)/)?.[1];
-      return { url, pwd };
-    });
+    return yamlUrl;
   });
 
-  console.log('识别到的内容：', spoilers);
+  console.log('识别到的内容：', yamlUrl);
+  const rawConfig = await fetchClashConfig(yamlUrl);
+  console.log('rawConfig: ', rawConfig);
 
-  await sendDingTalkMessage(spoilers, 'new');
-  console.log('todo: 自动抓取 clash 配置')
-  return spoilers;
+  const result: SpoilerV2 = {
+    yamlUrl,
+    rawConfig,
+  };
+
+  await sendDingTalkMessage(result);
+  
+  return result;
 }
 
 export async function getFreeNode() {
@@ -92,7 +107,7 @@ export async function getFreeNode() {
       width: 1024,
       height: 768,
     },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0',
   });
   const page = await context.newPage();
 
@@ -104,7 +119,7 @@ export async function getFreeNode() {
 
     await page.waitForLoadState('domcontentloaded');
 
-    let newSpoilers: Spoiler[] = [];
+    let newSpoilers: SpoilerV2 | undefined;
     try {
       console.log('run new spier')
       newSpoilers = await runNewSpier(page);
@@ -112,7 +127,7 @@ export async function getFreeNode() {
       console.error('Error:', error);
     }
 
-    return newSpoilers;
+    return [newSpoilers];
     
   } catch (error) {
     console.error('Error:', error);
