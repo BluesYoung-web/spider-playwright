@@ -24,11 +24,7 @@ async function sendDingTalkMessage(result: SpoilerV2) {
     markdown: {
       title: '免费节点(v2ray)',
       text: `### 免费节点更新\n
-- **链接：** ${result.yamlUrl}
-
-\`\`\`yaml
-${result.rawConfig}
-\`\`\`
+- **订阅链接：** ${result.yamlUrl}
 
 > 更新时间：${new Date().toLocaleString()}
 `,
@@ -40,13 +36,29 @@ ${result.rawConfig}
   // 通过 钉钉 的 webhook 发消息给自己
   // @ts-expect-error
   const dingtalkWebhook = import.meta.env.VITE_DINGTALK_WEBHOOK;
+
+  // 1. 发送 markdown 消息
   await fetch(dingtalkWebhook, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: rawMessage,
-  })
+  });
+
+  // 2. 以纯文本格式发送消息
+  await fetch(dingtalkWebhook, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      msgtype: 'text',
+      text: {
+        content: rawMessage,
+      },
+    }),
+  });
 }
 
 async function fetchClashConfig(url: string) {
