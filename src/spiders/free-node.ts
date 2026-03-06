@@ -80,9 +80,9 @@ ${mirrorLines}
 
 > 更新时间：${timestampDisplay}`;
 
-  const dingtalkWebhook = process.env.DINGTALK_WEBHOOK;
+  const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK;
   if (!dingtalkWebhook) {
-    console.error('缺少 DINGTALK_WEBHOOK 环境变量');
+    console.error('缺少 VITE_DINGTALK_WEBHOOK 环境变量');
     return;
   }
 
