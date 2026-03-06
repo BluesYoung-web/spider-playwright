@@ -19,15 +19,9 @@ interface SpoilerV2 {
 }
 
 const GIST_MIRRORS = [
-  'https://ghproxy.com',
   'https://ghproxy.net',
-  'https://mirror.ghproxy.com',
   'https://proxy.v2gh.com',
   'https://gh-proxy.com',
-  'https://ui.ghproxy.cc',
-  'https://github.akams.cn',
-  'https://ghproxy.cn',
-  'https://gh.api.99988866.xyz',
 ];
 
 async function createGistAndSendDingTalk(result: SpoilerV2) {
@@ -37,7 +31,7 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
     return;
   }
 
-  const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+  const timestamp = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/[-:T.Z\s\/]/g, '_');
   const filename = `free-node-${timestamp}.yaml`;
 
   const gistRes = await fetch('https://api.github.com/gists', {
@@ -67,7 +61,7 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
   }
 
   const mirrorLines = GIST_MIRRORS.map(m => `  - ${m}/${rawUrl}`).join('\n');
-  const timestampDisplay = new Date().toLocaleString();
+  const timestampDisplay = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
   const markdownText = `### 免费节点更新
 
@@ -77,6 +71,9 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
 
 - **国内镜像：**
 ${mirrorLines}
+
+
+---
 
 > 更新时间：${timestampDisplay}`;
 
