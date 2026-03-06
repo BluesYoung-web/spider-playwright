@@ -18,47 +18,87 @@ interface SpoilerV2 {
   rawConfig: string;
 }
 
-async function sendDingTalkMessage(result: SpoilerV2) {
-  const rawMessage = JSON.stringify({
-    msgtype: 'markdown',
-    markdown: {
-      title: '免费节点(v2ray)',
-      text: `### 免费节点更新\n
-- **订阅链接：** ${result.yamlUrl}
+const GIST_MIRRORS = [
+  'https://ghproxy.com',
+  'https://ghproxy.net',
+  'https://mirror.ghproxy.com',
+  'https://proxy.v2gh.com',
+  'https://gh-proxy.com',
+  'https://ui.ghproxy.cc',
+  'https://github.akams.cn',
+  'https://ghproxy.cn',
+  'https://gh.api.99988866.xyz',
+];
 
-> 更新时间：${new Date().toLocaleString()}
-`,
-    },
-  });
+async function createGistAndSendDingTalk(result: SpoilerV2) {
+  const token = process.env.YOUNG_GITHUB_GIST_TOKEN;
+  if (!token) {
+    console.error('缺少 YOUNG_GITHUB_GIST_TOKEN 环境变量');
+    return;
+  }
 
-  console.log('send msg to dingtalk: ', rawMessage);
+  const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+  const filename = `free-node-${timestamp}.yaml`;
 
-  // 通过 钉钉 的 webhook 发消息给自己
-  // @ts-expect-error
-  const dingtalkWebhook = import.meta.env.VITE_DINGTALK_WEBHOOK;
-
-  // 1. 发送 markdown 消息
-  await fetch(dingtalkWebhook, {
+  const gistRes = await fetch('https://api.github.com/gists', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
-    },
-    body: rawMessage,
-  });
-
-  // 2. 以纯文本格式发送消息
-  await fetch(dingtalkWebhook, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
+      'Authorization': `token ${token}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      msgtype: 'text',
-      text: {
-        content: result.rawConfig,
+      public: true,
+      files: {
+        [filename]: { content: result.rawConfig },
       },
     }),
   });
+
+  if (!gistRes.ok) {
+    const err = await gistRes.text();
+    throw new Error(`创建 Gist 失败: ${gistRes.status} ${err}`);
+  }
+
+  const gist = await gistRes.json() as { files: Record<string, { raw_url?: string }> };
+  const fileInfo = gist.files[filename];
+  const rawUrl = fileInfo?.raw_url;
+  if (!rawUrl) {
+    throw new Error('无法获取 Gist raw URL');
+  }
+
+  const mirrorLines = GIST_MIRRORS.map(m => `  - ${m}/${rawUrl}`).join('\n');
+  const timestampDisplay = new Date().toLocaleString();
+
+  const markdownText = `### 免费节点更新
+
+- **订阅链接：** ${result.yamlUrl}
+
+- **Gist 直链：** ${rawUrl}
+
+- **国内镜像：**
+${mirrorLines}
+
+> 更新时间：${timestampDisplay}`;
+
+  const dingtalkWebhook = process.env.DINGTALK_WEBHOOK;
+  if (!dingtalkWebhook) {
+    console.error('缺少 DINGTALK_WEBHOOK 环境变量');
+    return;
+  }
+
+  await fetch(dingtalkWebhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      msgtype: 'markdown',
+      markdown: {
+        title: '免费节点(v2ray)',
+        text: markdownText,
+      },
+    }),
+  });
+
+  console.log('已创建 Gist 并发送钉钉通知');
 }
 
 async function fetchClashConfig(url: string) {
@@ -96,8 +136,8 @@ async function runNewSpier(page: Page) {
     rawConfig,
   };
 
-  await sendDingTalkMessage(result);
-  
+  await createGistAndSendDingTalk(result);
+
   return result;
 }
 
