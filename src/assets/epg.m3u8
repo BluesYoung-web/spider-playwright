@@ -1,3 +1,4 @@
 #EXTM3U x-tvg-url="https://live.fanmingming.com/e.xml" catchup="append" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}"
-
+#EXTINF:-1 tvg-name="內江綜合" tvg-id="" tvg-country="中國大陸" tvg-language="國語" tvg-logo="https://epg.pw/media/images/channel/2023/07/22/large/20230722142242811328_18.png" group-title="綜合",[HD]内江新闻
+rtmp://njzb.scnj.tv:1938/live/xwzh_xwzh800
   
