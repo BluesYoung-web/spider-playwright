@@ -77,9 +77,9 @@ ${mirrorLines}
 
 > 更新时间：${timestampDisplay}`;
 
-  const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK;
+  const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK || process.env.DINGTALK_WEBHOOK;
   if (!dingtalkWebhook) {
-    console.error('缺少 VITE_DINGTALK_WEBHOOK 环境变量');
+    console.error('缺少 VITE_DINGTALK_WEBHOOK 或 DINGTALK_WEBHOOK 环境变量');
     return;
   }
 
@@ -107,26 +107,59 @@ async function fetchClashConfig(url: string) {
       'User-Agent': userAgent,
     },
   });
+  if (!res.ok) {
+    throw new Error(`拉取订阅配置失败: ${res.status} ${url}`);
+  }
   return await res.text();
+}
+
+export async function extractSubscriptionUrl(page: Page): Promise<string | undefined> {
+  const wraps = page.locator('.tgme_widget_message_wrap');
+  const count = await wraps.count();
+
+  for (let i = count - 1; i >= 0; i--) {
+    const wrap = wraps.nth(i);
+    const textEl = wrap.locator('.tgme_widget_message_text').first();
+    if (await textEl.count() === 0) continue;
+
+    const text = await textEl.textContent();
+    if (!text?.includes('高速免费节点分享')) continue;
+
+    const clashBtn = wrap.locator('.tgme_widget_message_inline_button.url_button', { hasText: 'Clash/Mihomo' });
+    if (await clashBtn.count() > 0) {
+      const href = await clashBtn.first().getAttribute('href');
+      if (href) return href;
+    }
+
+    const links = textEl.locator('a');
+    const linkCount = await links.count();
+    for (let j = 0; j < linkCount; j++) {
+      const href = await links.nth(j).getAttribute('href');
+      if (href && /\.ya?ml(?:\?|$)/i.test(href)) return href;
+    }
+    for (let j = 0; j < linkCount; j++) {
+      const href = await links.nth(j).getAttribute('href');
+      if (href && /\/download(?:\?|$)/.test(href) && (href.includes('nodebuf.com') || href.includes('v2rayse.com'))) {
+        return href;
+      }
+    }
+
+    return undefined;
+  }
+
+  return undefined;
 }
 
 
 async function runNewSpier(page: Page) {
-  const yamlUrl = await page.$$eval('.tgme_widget_message_text', (elements) => {
-    // 取最后 1 条消息
-    const lastMsg = Array.from(elements).pop();
-
-    const allATags = lastMsg.querySelectorAll('a');
-    const allLinks = Array.from(allATags).map((tag: any) => tag.href);
-
-    const yamlUrl = allLinks.find(link => link.endsWith('.yaml') || link.endsWith('.yml'));
-    
-    return yamlUrl;
-  });
+  const yamlUrl = await extractSubscriptionUrl(page);
+  if (!yamlUrl) {
+    throw new Error('未找到免费节点订阅链接');
+  }
 
   console.log('识别到的内容：', yamlUrl);
   const rawConfig = await fetchClashConfig(yamlUrl);
-  console.log('rawConfig: ', rawConfig);
+  console.log('rawConfig length: ', rawConfig.length);
 
   const result: SpoilerV2 = {
     yamlUrl,
