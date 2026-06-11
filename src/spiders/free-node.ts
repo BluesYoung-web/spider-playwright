@@ -76,38 +76,18 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
     throw new Error('无法获取 Gist raw URL');
   }
 
-  const mirrorLines = GIST_MIRRORS
-    .map(({ name, base }) => `  - ${name}: ${buildMirrorUrl(base, rawUrl)}`)
-    .join('\n');
   const mirrorUrls = GIST_MIRRORS.map(({ base }) => buildMirrorUrl(base, rawUrl));
   const timestampDisplay = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
-  const markdownText = `### 免费节点更新
-
-- **订阅链接：** ${result.yamlUrl}
-
-- **Gist 直链：** ${rawUrl}
-
-- **国内镜像：**
-${mirrorLines}
-
-
----
-
-> 更新时间：${timestampDisplay}`;
-
-  const mobileText = [
-    '【免费节点 · 手机复制版】',
+  const cardText = [
     `更新时间：${timestampDisplay}`,
     '',
-    '订阅链接：',
-    result.yamlUrl,
+    '长按链接可复制，或点下方按钮直接打开：',
     '',
-    'Gist 直链：',
+    'Gist 直链',
     rawUrl,
     '',
-    '国内镜像：',
-    ...mirrorUrls.map((url, index) => `${GIST_MIRRORS[index].name}：\n${url}`),
+    ...GIST_MIRRORS.map(({ name }, index) => [`${name} 镜像`, mirrorUrls[index]].join('\n')),
   ].join('\n');
 
   const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK || process.env.DINGTALK_WEBHOOK;
@@ -117,28 +97,12 @@ ${mirrorLines}
   }
 
   await postDingTalk(dingtalkWebhook, {
-    msgtype: 'markdown',
-    markdown: {
-      title: '免费节点(v2ray)',
-      text: markdownText,
-    },
-  });
-
-  await postDingTalk(dingtalkWebhook, {
-    msgtype: 'text',
-    text: {
-      content: mobileText,
-    },
-  });
-
-  await postDingTalk(dingtalkWebhook, {
     msgtype: 'actionCard',
     actionCard: {
-      title: '免费节点 · 手机快捷打开',
-      text: `更新时间：${timestampDisplay}\n\n点击下方按钮可直接打开链接；如需粘贴到 Clash，请用上一条纯文本消息长按复制。`,
+      title: '免费节点更新',
+      text: cardText,
       btnOrientation: '0',
       btns: [
-        { title: '订阅源', actionURL: result.yamlUrl },
         { title: 'Gist 直链', actionURL: rawUrl },
         ...GIST_MIRRORS.map(({ name }, index) => ({
           title: `${name} 镜像`,
@@ -148,7 +112,7 @@ ${mirrorLines}
     },
   });
 
-  console.log('已创建 Gist 并发送钉钉通知（Markdown + 手机文本 + 手机按钮）');
+  console.log('已创建 Gist 并发送钉钉通知');
 }
 
 async function fetchClashConfig(url: string) {
