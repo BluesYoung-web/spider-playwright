@@ -19,10 +19,26 @@ interface SpoilerV2 {
 }
 
 const GIST_MIRRORS = [
-  'https://ghproxy.net',
-  'https://proxy.v2gh.com',
-  'https://gh-proxy.com',
+  { name: 'ghproxy', base: 'https://ghproxy.net' },
+  { name: 'v2gh', base: 'https://proxy.v2gh.com' },
+  { name: 'gh-proxy', base: 'https://gh-proxy.com' },
 ];
+
+function buildMirrorUrl(mirrorBase: string, rawUrl: string) {
+  return `${mirrorBase}/${rawUrl}`;
+}
+
+async function postDingTalk(webhook: string, payload: Record<string, unknown>) {
+  const res = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`钉钉发送失败: ${res.status} ${err}`);
+  }
+}
 
 async function createGistAndSendDingTalk(result: SpoilerV2) {
   const token = process.env.YOUNG_GITHUB_GIST_TOKEN;
@@ -60,7 +76,10 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
     throw new Error('无法获取 Gist raw URL');
   }
 
-  const mirrorLines = GIST_MIRRORS.map(m => `  - ${m}/${rawUrl}`).join('\n');
+  const mirrorLines = GIST_MIRRORS
+    .map(({ name, base }) => `  - ${name}: ${buildMirrorUrl(base, rawUrl)}`)
+    .join('\n');
+  const mirrorUrls = GIST_MIRRORS.map(({ base }) => buildMirrorUrl(base, rawUrl));
   const timestampDisplay = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
   const markdownText = `### 免费节点更新
@@ -77,25 +96,59 @@ ${mirrorLines}
 
 > 更新时间：${timestampDisplay}`;
 
+  const mobileText = [
+    '【免费节点 · 手机复制版】',
+    `更新时间：${timestampDisplay}`,
+    '',
+    '订阅链接：',
+    result.yamlUrl,
+    '',
+    'Gist 直链：',
+    rawUrl,
+    '',
+    '国内镜像：',
+    ...mirrorUrls.map((url, index) => `${GIST_MIRRORS[index].name}：\n${url}`),
+  ].join('\n');
+
   const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK || process.env.DINGTALK_WEBHOOK;
   if (!dingtalkWebhook) {
     console.error('缺少 VITE_DINGTALK_WEBHOOK 或 DINGTALK_WEBHOOK 环境变量');
     return;
   }
 
-  await fetch(dingtalkWebhook, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      msgtype: 'markdown',
-      markdown: {
-        title: '免费节点(v2ray)',
-        text: markdownText,
-      },
-    }),
+  await postDingTalk(dingtalkWebhook, {
+    msgtype: 'markdown',
+    markdown: {
+      title: '免费节点(v2ray)',
+      text: markdownText,
+    },
   });
 
-  console.log('已创建 Gist 并发送钉钉通知');
+  await postDingTalk(dingtalkWebhook, {
+    msgtype: 'text',
+    text: {
+      content: mobileText,
+    },
+  });
+
+  await postDingTalk(dingtalkWebhook, {
+    msgtype: 'actionCard',
+    actionCard: {
+      title: '免费节点 · 手机快捷打开',
+      text: `更新时间：${timestampDisplay}\n\n点击下方按钮可直接打开链接；如需粘贴到 Clash，请用上一条纯文本消息长按复制。`,
+      btnOrientation: '0',
+      btns: [
+        { title: '订阅源', actionURL: result.yamlUrl },
+        { title: 'Gist 直链', actionURL: rawUrl },
+        ...GIST_MIRRORS.map(({ name }, index) => ({
+          title: `${name} 镜像`,
+          actionURL: mirrorUrls[index],
+        })),
+      ],
+    },
+  });
+
+  console.log('已创建 Gist 并发送钉钉通知（Markdown + 手机文本 + 手机按钮）');
 }
 
 async function fetchClashConfig(url: string) {
