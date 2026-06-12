@@ -24,8 +24,65 @@ const GIST_MIRRORS = [
   { name: 'gh-proxy', base: 'https://gh-proxy.com' },
 ];
 
+const DINGTALK_KEYWORD = '免费节点';
+const ACTION_CARD_TEXT_LIMIT = 1000;
+const ACTION_CARD_BTNS_LIMIT = 1000;
+
 function buildMirrorUrl(mirrorBase: string, rawUrl: string) {
   return `${mirrorBase}/${rawUrl}`;
+}
+
+function buildDingTalkText(rawUrl: string, mirrorUrls: string[], timestampDisplay: string) {
+  return [
+    `${DINGTALK_KEYWORD}更新`,
+    `更新时间：${timestampDisplay}`,
+    '',
+    'Gist 直链：',
+    rawUrl,
+    '',
+    '国内镜像：',
+    ...GIST_MIRRORS.map(({ name }, index) => `${name}：\n${mirrorUrls[index]}`),
+  ].join('\n');
+}
+
+function buildDingTalkActionCard(
+  rawUrl: string,
+  mirrorUrls: string[],
+  timestampDisplay: string,
+) {
+  const cardText = [
+    `${DINGTALK_KEYWORD}更新`,
+    `更新时间：${timestampDisplay}`,
+    '',
+    'Gist 直链（长按复制）：',
+    rawUrl,
+    '',
+    '国内镜像请点下方按钮打开。',
+  ].join('\n');
+
+  const btns = [
+    { title: 'Gist 直链', actionURL: rawUrl },
+    ...GIST_MIRRORS.map(({ name }, index) => ({
+      title: `${name} 镜像`,
+      actionURL: mirrorUrls[index],
+    })),
+  ];
+
+  return {
+    msgtype: 'actionCard',
+    actionCard: {
+      title: `${DINGTALK_KEYWORD}更新`,
+      text: cardText,
+      btnOrientation: '0',
+      btns,
+    },
+  };
+}
+
+function canUseActionCard(payload: ReturnType<typeof buildDingTalkActionCard>) {
+  const text = payload.actionCard.text;
+  const btnsJson = JSON.stringify(payload.actionCard.btns);
+  return text.length <= ACTION_CARD_TEXT_LIMIT && btnsJson.length <= ACTION_CARD_BTNS_LIMIT;
 }
 
 async function postDingTalk(webhook: string, payload: Record<string, unknown>) {
@@ -34,10 +91,59 @@ async function postDingTalk(webhook: string, payload: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`钉钉发送失败: ${res.status} ${err}`);
+  const bodyText = await res.text();
+  let data: { errcode?: number; errmsg?: string } = {};
+  try {
+    data = JSON.parse(bodyText) as { errcode?: number; errmsg?: string };
+  } catch {
+    throw new Error(`钉钉响应非 JSON: ${bodyText}`);
   }
+  if (!res.ok || data.errcode !== 0) {
+    throw new Error(`钉钉发送失败: errcode=${data.errcode ?? 'unknown'} errmsg=${data.errmsg ?? bodyText}`);
+  }
+}
+
+function printResultLinks(rawUrl: string, mirrorUrls: string[], timestampDisplay: string) {
+  console.log('\n=== 最终订阅链接 ===');
+  console.log(`更新时间：${timestampDisplay}`);
+  console.log(`Gist 直链：${rawUrl}`);
+  GIST_MIRRORS.forEach(({ name }, index) => {
+    console.log(`${name} 镜像：${mirrorUrls[index]}`);
+  });
+  console.log('====================\n');
+}
+
+async function sendDingTalkNotification(
+  webhook: string,
+  rawUrl: string,
+  mirrorUrls: string[],
+  timestampDisplay: string,
+) {
+  const textPayload = {
+    msgtype: 'text',
+    text: {
+      content: buildDingTalkText(rawUrl, mirrorUrls, timestampDisplay),
+    },
+  };
+
+  const actionCardPayload = buildDingTalkActionCard(rawUrl, mirrorUrls, timestampDisplay);
+
+  if (canUseActionCard(actionCardPayload)) {
+    try {
+      await postDingTalk(webhook, actionCardPayload);
+      console.log('已发送钉钉 ActionCard 通知');
+      return;
+    } catch (error) {
+      console.warn('ActionCard 发送失败，降级为纯文本:', error);
+    }
+  } else {
+    console.warn(
+      `ActionCard 超出限制（text=${actionCardPayload.actionCard.text.length}, btns=${JSON.stringify(actionCardPayload.actionCard.btns).length}），改用纯文本`,
+    );
+  }
+
+  await postDingTalk(webhook, textPayload);
+  console.log('已发送钉钉纯文本通知');
 }
 
 async function createGistAndSendDingTalk(result: SpoilerV2) {
@@ -79,16 +185,7 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
   const mirrorUrls = GIST_MIRRORS.map(({ base }) => buildMirrorUrl(base, rawUrl));
   const timestampDisplay = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
-  const cardText = [
-    `更新时间：${timestampDisplay}`,
-    '',
-    '长按链接可复制，或点下方按钮直接打开：',
-    '',
-    'Gist 直链',
-    rawUrl,
-    '',
-    ...GIST_MIRRORS.map(({ name }, index) => [`${name} 镜像`, mirrorUrls[index]].join('\n')),
-  ].join('\n');
+  printResultLinks(rawUrl, mirrorUrls, timestampDisplay);
 
   const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK || process.env.DINGTALK_WEBHOOK;
   if (!dingtalkWebhook) {
@@ -96,21 +193,7 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
     return;
   }
 
-  await postDingTalk(dingtalkWebhook, {
-    msgtype: 'actionCard',
-    actionCard: {
-      title: '免费节点更新',
-      text: cardText,
-      btnOrientation: '0',
-      btns: [
-        { title: 'Gist 直链', actionURL: rawUrl },
-        ...GIST_MIRRORS.map(({ name }, index) => ({
-          title: `${name} 镜像`,
-          actionURL: mirrorUrls[index],
-        })),
-      ],
-    },
-  });
+  await sendDingTalkNotification(dingtalkWebhook, rawUrl, mirrorUrls, timestampDisplay);
 
   console.log('已创建 Gist 并发送钉钉通知');
 }
@@ -224,6 +307,7 @@ export async function getFreeNode() {
       newSpoilers = await runNewSpier(page);
     } catch (error) {
       console.error('Error:', error);
+      throw error;
     }
 
     return [newSpoilers];
