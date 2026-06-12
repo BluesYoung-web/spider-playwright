@@ -48,3 +48,4 @@ jobs:
         env:
           VITE_DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
           YOUNG_GITHUB_GIST_TOKEN: ${{ secrets.YOUNG_GITHUB_GIST_TOKEN }}
+          OFFICIAL_DIRECT_DOMAIN: ${{ secrets.OFFICIAL_DIRECT_DOMAIN }}

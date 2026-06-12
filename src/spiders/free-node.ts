@@ -18,25 +18,48 @@ interface SpoilerV2 {
   rawConfig: string;
 }
 
+// 按实测延迟从低到高排序（proxy.v2gh.com 已超时不可用）
 const GIST_MIRRORS = [
-  { name: 'ghproxy', base: 'https://ghproxy.net' },
-  { name: 'v2gh', base: 'https://proxy.v2gh.com' },
   { name: 'gh-proxy', base: 'https://gh-proxy.com' },
+  { name: 'ghproxy', base: 'https://ghproxy.net' },
+  { name: 'ghfast', base: 'https://ghfast.top' },
 ];
 
 const DINGTALK_KEYWORD = '免费节点';
 const ACTION_CARD_TEXT_LIMIT = 1000;
 const ACTION_CARD_BTNS_LIMIT = 1000;
 
+// ! 官方能直连的域名，替换获取到的主机地址即可
+const OFFICIAL_DIRECT_DOMAIN = process.env.OFFICIAL_DIRECT_DOMAIN || '';
+
+function getOfficialDirectUrl(url: string): string | undefined {
+  if (!OFFICIAL_DIRECT_DOMAIN) return undefined;
+  try {
+    const parsed = new URL(url);
+    parsed.hostname = OFFICIAL_DIRECT_DOMAIN;
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 function buildMirrorUrl(mirrorBase: string, rawUrl: string) {
   return `${mirrorBase}/${rawUrl}`;
 }
 
-function buildDingTalkText(rawUrl: string, mirrorUrls: string[], timestampDisplay: string) {
+function buildDingTalkText(
+  directUrl: string | undefined,
+  rawUrl: string,
+  mirrorUrls: string[],
+  timestampDisplay: string,
+) {
   return [
     `${DINGTALK_KEYWORD}更新`,
     `更新时间：${timestampDisplay}`,
     '',
+    ...(directUrl
+      ? ['官方直连：', directUrl, '']
+      : []),
     'Gist 直链：',
     rawUrl,
     '',
@@ -46,6 +69,7 @@ function buildDingTalkText(rawUrl: string, mirrorUrls: string[], timestampDispla
 }
 
 function buildDingTalkActionCard(
+  directUrl: string | undefined,
   rawUrl: string,
   mirrorUrls: string[],
   timestampDisplay: string,
@@ -54,6 +78,9 @@ function buildDingTalkActionCard(
     `${DINGTALK_KEYWORD}更新`,
     `更新时间：${timestampDisplay}`,
     '',
+    ...(directUrl
+      ? ['官方直连（长按复制）：', directUrl, '']
+      : []),
     'Gist 直链（长按复制）：',
     rawUrl,
     '',
@@ -61,6 +88,9 @@ function buildDingTalkActionCard(
   ].join('\n');
 
   const btns = [
+    ...(directUrl
+      ? [{ title: '官方直连', actionURL: directUrl }]
+      : []),
     { title: 'Gist 直链', actionURL: rawUrl },
     ...GIST_MIRRORS.map(({ name }, index) => ({
       title: `${name} 镜像`,
@@ -103,9 +133,17 @@ async function postDingTalk(webhook: string, payload: Record<string, unknown>) {
   }
 }
 
-function printResultLinks(rawUrl: string, mirrorUrls: string[], timestampDisplay: string) {
+function printResultLinks(
+  directUrl: string | undefined,
+  rawUrl: string,
+  mirrorUrls: string[],
+  timestampDisplay: string,
+) {
   console.log('\n=== 最终订阅链接 ===');
   console.log(`更新时间：${timestampDisplay}`);
+  if (directUrl) {
+    console.log(`官方直连：${directUrl}`);
+  }
   console.log(`Gist 直链：${rawUrl}`);
   GIST_MIRRORS.forEach(({ name }, index) => {
     console.log(`${name} 镜像：${mirrorUrls[index]}`);
@@ -115,6 +153,7 @@ function printResultLinks(rawUrl: string, mirrorUrls: string[], timestampDisplay
 
 async function sendDingTalkNotification(
   webhook: string,
+  directUrl: string | undefined,
   rawUrl: string,
   mirrorUrls: string[],
   timestampDisplay: string,
@@ -122,11 +161,11 @@ async function sendDingTalkNotification(
   const textPayload = {
     msgtype: 'text',
     text: {
-      content: buildDingTalkText(rawUrl, mirrorUrls, timestampDisplay),
+      content: buildDingTalkText(directUrl, rawUrl, mirrorUrls, timestampDisplay),
     },
   };
 
-  const actionCardPayload = buildDingTalkActionCard(rawUrl, mirrorUrls, timestampDisplay);
+  const actionCardPayload = buildDingTalkActionCard(directUrl, rawUrl, mirrorUrls, timestampDisplay);
 
   if (canUseActionCard(actionCardPayload)) {
     try {
@@ -146,7 +185,7 @@ async function sendDingTalkNotification(
   console.log('已发送钉钉纯文本通知');
 }
 
-async function createGistAndSendDingTalk(result: SpoilerV2) {
+async function createGistAndSendDingTalk(result: SpoilerV2, directUrl?: string) {
   const token = process.env.YOUNG_GITHUB_GIST_TOKEN;
   if (!token) {
     console.error('缺少 YOUNG_GITHUB_GIST_TOKEN 环境变量');
@@ -185,7 +224,7 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
   const mirrorUrls = GIST_MIRRORS.map(({ base }) => buildMirrorUrl(base, rawUrl));
   const timestampDisplay = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
-  printResultLinks(rawUrl, mirrorUrls, timestampDisplay);
+  printResultLinks(directUrl, rawUrl, mirrorUrls, timestampDisplay);
 
   const dingtalkWebhook = process.env.VITE_DINGTALK_WEBHOOK || process.env.DINGTALK_WEBHOOK;
   if (!dingtalkWebhook) {
@@ -193,7 +232,7 @@ async function createGistAndSendDingTalk(result: SpoilerV2) {
     return;
   }
 
-  await sendDingTalkNotification(dingtalkWebhook, rawUrl, mirrorUrls, timestampDisplay);
+  await sendDingTalkNotification(dingtalkWebhook, directUrl, rawUrl, mirrorUrls, timestampDisplay);
 
   console.log('已创建 Gist 并发送钉钉通知');
 }
@@ -252,13 +291,18 @@ export async function extractSubscriptionUrl(page: Page): Promise<string | undef
 
 
 async function runNewSpier(page: Page) {
-  const yamlUrl = await extractSubscriptionUrl(page);
-  if (!yamlUrl) {
+  const rawYamlUrl = await extractSubscriptionUrl(page);
+  if (!rawYamlUrl) {
     throw new Error('未找到免费节点订阅链接');
   }
 
-  console.log('识别到的内容：', yamlUrl);
-  const rawConfig = await fetchClashConfig(yamlUrl);
+  const directUrl = getOfficialDirectUrl(rawYamlUrl);
+  const yamlUrl = directUrl ?? rawYamlUrl;
+  console.log('识别到的内容：', rawYamlUrl);
+  if (directUrl) {
+    console.log('替换直连域名后：', directUrl);
+  }
+  const rawConfig = await fetchClashConfig(rawYamlUrl);
   console.log('rawConfig length: ', rawConfig.length);
 
   const result: SpoilerV2 = {
@@ -266,7 +310,7 @@ async function runNewSpier(page: Page) {
     rawConfig,
   };
 
-  await createGistAndSendDingTalk(result);
+  await createGistAndSendDingTalk(result, directUrl);
 
   return result;
 }
