@@ -1,4 +1,4 @@
-import { chromium, Page } from 'playwright';
+import { chromium, Locator, Page } from 'playwright';
 
 interface Spoiler {
   pwd: string;
@@ -252,41 +252,60 @@ async function fetchClashConfig(url: string) {
   return await res.text();
 }
 
+const CLASH_BUTTON_PATTERN = /clash\s*\/?\s*mihomo/i;
+
+async function extractSubscriptionUrlFromMessage(wrap: Locator): Promise<string | undefined> {
+  // 当前页面格式：内联键盘按钮 “Clash / Mihomo”
+  const buttons = wrap.locator(
+    '.tgme_widget_message_inline_keyboard .tgme_widget_message_inline_button.url_button',
+  );
+  const buttonCount = await buttons.count();
+  for (let i = 0; i < buttonCount; i++) {
+    const button = buttons.nth(i);
+    const label = (await button.textContent()) ?? '';
+    if (!CLASH_BUTTON_PATTERN.test(label)) continue;
+    const href = await button.getAttribute('href');
+    if (href) return href;
+  }
+
+  // 旧版格式：正文里的订阅链接
+  const links = wrap.locator('.tgme_widget_message_text a');
+  const linkCount = await links.count();
+  for (let i = 0; i < linkCount; i++) {
+    const href = await links.nth(i).getAttribute('href');
+    if (!href) continue;
+    if (/\/mihomo(?:\?|$)/i.test(href) || /\.ya?ml(?:\?|$)/i.test(href)) return href;
+  }
+  for (let i = 0; i < linkCount; i++) {
+    const href = await links.nth(i).getAttribute('href');
+    if (href && /\/download(?:\?|$)/.test(href) && (href.includes('nodebuf.com') || href.includes('v2rayse.com'))) {
+      return href;
+    }
+  }
+
+  return undefined;
+}
+
 export async function extractSubscriptionUrl(page: Page): Promise<string | undefined> {
   const wraps = page.locator('.tgme_widget_message_wrap');
   const count = await wraps.count();
 
+  // 从最新消息往前找。频道文案多次改版（“高速免费节点分享” → “免费节点更新”），
+  // 因此优先匹配带“免费节点”文案的消息，匹配不到时退回任意带 Clash/Mihomo 订阅的消息。
+  let fallback: string | undefined;
+
   for (let i = count - 1; i >= 0; i--) {
     const wrap = wraps.nth(i);
+    const href = await extractSubscriptionUrlFromMessage(wrap);
+    if (!href) continue;
+
     const textEl = wrap.locator('.tgme_widget_message_text').first();
-    if (await textEl.count() === 0) continue;
-
-    const text = await textEl.textContent();
-    if (!text?.includes('高速免费节点分享')) continue;
-
-    const clashBtn = wrap.locator('.tgme_widget_message_inline_button.url_button', { hasText: 'Clash/Mihomo' });
-    if (await clashBtn.count() > 0) {
-      const href = await clashBtn.first().getAttribute('href');
-      if (href) return href;
-    }
-
-    const links = textEl.locator('a');
-    const linkCount = await links.count();
-    for (let j = 0; j < linkCount; j++) {
-      const href = await links.nth(j).getAttribute('href');
-      if (href && /\.ya?ml(?:\?|$)/i.test(href)) return href;
-    }
-    for (let j = 0; j < linkCount; j++) {
-      const href = await links.nth(j).getAttribute('href');
-      if (href && /\/download(?:\?|$)/.test(href) && (href.includes('nodebuf.com') || href.includes('v2rayse.com'))) {
-        return href;
-      }
-    }
-
-    return undefined;
+    const text = (await textEl.count()) > 0 ? (await textEl.textContent()) ?? '' : '';
+    if (text.includes('免费节点')) return href;
+    fallback ??= href;
   }
 
-  return undefined;
+  return fallback;
 }
 
 
